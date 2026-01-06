@@ -27,7 +27,10 @@ const productSchema = new mongoose.Schema(
       required: true,
     },
     images: {
-      type: [string],
+      type: [{
+        url: String,
+        public_id: String,
+      }],
       default: [],
     },
 
@@ -35,6 +38,7 @@ const productSchema = new mongoose.Schema(
     sizes: {
       type: [String],
       enum: ["xs", "s", "m", "l", "xl", "xxl"],
+      default: undefined
     },
     gender: {
       type: String,
@@ -42,19 +46,21 @@ const productSchema = new mongoose.Schema(
     },
     colors: {
       type: [String],
-    },
-    typeClothing: {
-      type: String,
-      enum: ["shirts", "t-shirts", "pants"],
+      default: undefined
     },
 
     // Tech
     brand: {
       type: String,
     },
-    techType: {
+
+    type: {
       type: String,
+      required: function () {
+        return this.category !== 'others';
+      },
     },
+
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"
