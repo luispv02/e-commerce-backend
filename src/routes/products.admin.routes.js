@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { createProduct, getAdminProducts } = require("../controllers/products.admin.controller");
+const { createProduct, getAdminProducts, getAdminProductById } = require("../controllers/products.admin.controller");
 
 const multer  = require('multer');
 const validateJWT = require("../middlewares/validate-jwt.middleware");
@@ -27,6 +27,13 @@ router.get(
   validateJWT,
   verifyAdmin,
   getAdminProducts
+)
+
+router.get(
+  '/:id', 
+  validateJWT,
+  verifyAdmin,
+  getAdminProductById
 )
 
 

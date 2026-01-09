@@ -8,7 +8,7 @@ const getProducts = async(req, res) => {
   try {
 
     const { order, q, page = 1, limit=10 } = req.query;
-
+   
     const filters = getFilters({...req.query, isAdmin: false})
     const sort = getSort(order);
     const { pageNum, limitNum, skip } = getPagination(page, limit);
@@ -43,6 +43,36 @@ const getProducts = async(req, res) => {
   }
 }
 
+const getProductById = async(req, res) => {
+  try {
+
+    const productId = req.params.id;
+
+    const product = await Product.findOne({
+      _id: productId,
+      isActive: true
+    });
+
+    if(!product){
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      })
+    }
+    
+    return res.status(200).json({
+      ok: true,
+      product
+    })
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      msg: 'Error al obtener producto'
+    })
+  }
+}
+
 module.exports = {
-  getProducts
+  getProducts,
+  getProductById
 }

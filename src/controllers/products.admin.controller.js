@@ -92,7 +92,39 @@ const getAdminProducts = async(req, res) => {
   }
 }
 
+const getAdminProductById = async(req, res) => {
+  try{
+
+    const productId = req.params.id;
+    const userId = req.user.uid;
+    
+    const product = await Product.findOne({
+      _id: productId,
+      createdBy: userId
+    });
+
+    if(!product){
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      })
+    }
+
+    return res.status(200).json({
+      ok: true,
+      product
+    })
+
+  }catch(error){
+    return res.status(500).json({
+      ok: false,
+      msg: 'Error al obtener producto'
+    })
+  }
+}
+
 module.exports = {
   createProduct,
-  getAdminProducts
+  getAdminProducts,
+  getAdminProductById
 }
