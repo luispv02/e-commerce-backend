@@ -33,6 +33,11 @@ const productSchema = new mongoose.Schema(
       }],
       default: [],
     },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+
 
     // Clothes
     sizes: {
@@ -70,5 +75,18 @@ const productSchema = new mongoose.Schema(
     timestamps: true
   }
 );
+
+productSchema.method('toJSON', function(){
+  const { __v, _id, ...object } = this.toObject();
+  object.id = _id;
+  return object
+})
+
+productSchema.index({
+  title: 'text',
+  description: 'text',
+  brand: 'text',
+  type: 'text'
+});
 
 module.exports = mongoose.model('Product', productSchema)
