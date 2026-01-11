@@ -1,11 +1,11 @@
 const { Router } = require("express");
-const { createProduct, getAdminProducts, getAdminProductById } = require("../controllers/products.admin.controller");
+const { createProduct, getAdminProducts, getAdminProductById, updateProduct } = require("../controllers/products.admin.controller");
 
 const multer  = require('multer');
 const validateJWT = require("../middlewares/validate-jwt.middleware");
 const { verifyAdmin } = require("../middlewares/verify-admin");
 const validateFields = require("../middlewares/validate-fields.middleware");
-const createProductValidations = require("../validators/product.validators");
+const { createProductValidations, updateProductValidations } = require("../validators/product.validator");
 
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
@@ -34,6 +34,16 @@ router.get(
   validateJWT,
   verifyAdmin,
   getAdminProductById
+)
+
+router.put(
+  '/:id', 
+  upload.array('files'),
+  validateJWT,
+  verifyAdmin,
+  updateProductValidations,
+  validateFields,
+  updateProduct
 )
 
 

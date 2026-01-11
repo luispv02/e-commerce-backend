@@ -2,6 +2,7 @@
 const getFilters = require("../helpers/get-filters.helper");
 const { uploadFiles } = require("../helpers/upload-files.helper");
 const Product = require("../models/Product.model");
+const cloudinary = require('../config/cloudinary.config');
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
 
@@ -123,8 +124,69 @@ const getAdminProductById = async(req, res) => {
   }
 }
 
+const updateProduct = async(req, res) => {
+  try{
+    const productId = req.params.id;
+    const userId = req.user.uid;
+    const { deletedImages, ...body } = req.body;
+    const files = req.files || [];
+
+    let updateData = {
+      $set: { ...body }
+    };
+
+    // Add new images
+    if(files.length > 0){
+      const urlFiles = await uploadFiles(files);
+       updateData.$push = {
+        images: { $each: urlFiles }
+      };
+    }
+
+    // delete saved images
+    if(deletedImages){
+      const imagesToDelete = JSON.parse(deletedImages);
+
+      if(Array.isArray(imagesToDelete) && imagesToDelete.length > 0){
+         updateData.$pull = {
+          images: {
+            public_id: { $in: imagesToDelete }
+          }
+        };
+
+        await cloudinary.api.delete_resources(imagesToDelete);
+      }
+    }
+
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id: productId, createdBy: userId },
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      });
+    }
+    
+    return res.status(200).json({
+      ok: true,
+      msg: 'Producto actualizado',
+      product: updatedProduct
+    })
+  }catch(error){
+    return res.status(500).json({
+      ok: false,
+      msg: 'Error al actualizar producto'
+    })
+  }
+}
+
 module.exports = {
   createProduct,
   getAdminProducts,
-  getAdminProductById
+  getAdminProductById,
+  updateProduct
 }
