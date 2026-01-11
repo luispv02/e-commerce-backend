@@ -44,7 +44,8 @@ const createProduct = async(req, res) => {
 
     return res.status(201).json({
       ok: true,
-      msg: 'Producto creado'
+      msg: 'Producto creado',
+      product: newProduct
     })
 
   } catch (error) {
@@ -184,9 +185,46 @@ const updateProduct = async(req, res) => {
   }
 }
 
+const deleteProduct = async(req, res) => {
+  try{
+    const productId = req.params.id;
+    const userId = req.user.uid;
+
+    const productDeleted = await Product.findOneAndDelete({
+      _id: productId, 
+      createdBy: userId
+    });
+
+    if (!productDeleted) {
+      return res.status(404).json({
+        ok: false,
+        msg: 'Producto no encontrado'
+      });
+    }
+
+    if (productDeleted.images && productDeleted.images.length > 0) {
+      const publicIds = productDeleted.images.map(img => img.public_id);
+      await cloudinary.api.delete_resources(publicIds);
+    }
+
+    return res.status(200).json({
+      ok: true,
+      msg: 'Producto eliminado',
+      product: productDeleted
+    });
+
+  }catch(error){
+    return res.status(500).json({
+      ok: false,
+      msg: 'Error al eliminar producto'
+    })
+  }
+}
+
 module.exports = {
   createProduct,
   getAdminProducts,
   getAdminProductById,
-  updateProduct
+  updateProduct,
+  deleteProduct
 }

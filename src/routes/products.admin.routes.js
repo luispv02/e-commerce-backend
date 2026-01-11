@@ -1,5 +1,5 @@
 const { Router } = require("express");
-const { createProduct, getAdminProducts, getAdminProductById, updateProduct } = require("../controllers/products.admin.controller");
+const { createProduct, getAdminProducts, getAdminProductById, updateProduct, deleteProduct } = require("../controllers/products.admin.controller");
 
 const multer  = require('multer');
 const validateJWT = require("../middlewares/validate-jwt.middleware");
@@ -12,38 +12,37 @@ const upload = multer({ storage: storage })
 
 const router = Router();
 
+router.use(validateJWT, verifyAdmin)
+
 router.post(
   '/', 
   upload.array('files'),
-  validateJWT,
-  verifyAdmin,
   createProductValidations,
   validateFields,
   createProduct
 )
 
 router.get(
-  '/', 
-  validateJWT,
-  verifyAdmin,
+  '/',
   getAdminProducts
 )
 
 router.get(
-  '/:id', 
-  validateJWT,
-  verifyAdmin,
+  '/:id',
   getAdminProductById
 )
 
 router.put(
   '/:id', 
   upload.array('files'),
-  validateJWT,
-  verifyAdmin,
   updateProductValidations,
   validateFields,
   updateProduct
+)
+
+router.delete(
+  '/:id',
+  deleteProduct
 )
 
 
