@@ -1,121 +1,52 @@
-const generateJWT = require("../helpers/generate-jwt.helper");
-const User = require("../models/User.model");
-const bcrypt = require('bcrypt');
+const authService = require('../services/auth.service');
 
-const registerUser = async (req, res) => {
+const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password } = req.body;
-
-    const user = await User.findOne({ email });
-    if (user) {
-      return res.status(400).json({
-        ok: false,
-        msg: 'Usuario ya registrado'
-      })
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-    const newUser = new User({ name, email, password: hashedPassword });
-    await newUser.save();
-
-    const token = await generateJWT({ uid: newUser.id, name: newUser.name, role: newUser.role })
+    const body = req.body;
+    
+    const data = await authService.registerUser(body)
 
     return res.status(201).json({
       ok: true,
       msg: 'Usuario registrado',
-      data: {
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          role: newUser.role,
-        },
-        token
-      }
+      data
     })
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      msg: 'Error al registrar usuario'
-    })
+    next(error)
   }
 }
 
-const loginUser = async (req, res) => {
+const loginUser = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({
-        ok: false,
-        msg: 'Credenciales invalidas'
-      })
-    }
+    const body = req.body;
 
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(400).json({
-        ok: false,
-        msg: 'Credenciales invalidas'
-      })
-    };
-
-    const token = await generateJWT({ uid: user.id, name: user.name, role: user.role })
+    const data = await authService.loginUser(body)
 
     return res.status(200).json({
       ok: true,
-      data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-        token
-      }
+      data
     })
 
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      msg: 'Error al iniciar sesión'
-    })
+    next(error)
   }
 }
 
-const renewToken = async (req, res) => {
+const renewToken = async (req, res, next) => {
   try {
 
-    const { uid, name, role } = req.user;
-    if (!uid || !name || !role) {
-      return res.status(400).json({
-        ok: false,
-        msg: 'Datos no validos'
-      });
-    }
+    const user = req.user;
 
-    const token = await generateJWT({ uid, name, role });
+    const data = await authService.renewToken(user)
 
     return res.status(200).json({
       ok: true,
       msg: 'Token renovado',
-      data: {
-        user: {
-          id: uid,
-          name: name,
-          role: role,
-        },
-        token
-      }
+      data
     })
-
   } catch (error) {
-    return res.status(500).json({
-      ok: false,
-      msg: 'Error al renovar token'
-    })
+    next(error)
   }
 }
 
