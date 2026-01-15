@@ -1,13 +1,11 @@
 const jwt = require('jsonwebtoken');
+const CustomError = require('../utils/custom-error.util');
 
 const validateJWT = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        ok: false,
-        msg: "Formato de token no válido"
-      });
+      return next(new CustomError('Formato de token no válido', 401))
     }
 
     const token = authHeader.split(' ')[1];
@@ -17,16 +15,10 @@ const validateJWT = (req, res, next) => {
 
   } catch (error) {
     if(error.name === 'TokenExpiredError'){
-      return res.status(401).json({
-        ok: false,
-        msg: 'Token expirado'
-      })
+      return next(new CustomError('Token expirado', 401))
     }
 
-    return res.status(401).json({
-      ok: false,
-      msg: 'Token no válido'
-    })
+    return next(new CustomError('Token no válido', 401))
   }
 }
 
