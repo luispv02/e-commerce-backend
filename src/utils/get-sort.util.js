@@ -4,13 +4,13 @@ const getSort = (order) => {
     case "price-asc":
       return { price: 1 };
     case "price-desc":
-      return { price: -1}
+      return { price: -1 }
     case "newest":
       return { createdAt: -1 } ;
     case "oldest":
       return { createdAt: 1 };
     default:
-      return { createdAt: -1} ;
+      return { createdAt: 1 } ;
   }
 };
 

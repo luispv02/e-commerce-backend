@@ -30,10 +30,14 @@ const cartSchema = new mongoose.Schema(
   }, { timestamps: true }
 )
 
-cartSchema.method('toJSON', function(){
-  const { __v, _id, ...object } = this.toObject();
-  object.id = _id;
-  return object
-})
+cartSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
 
 module.exports = mongoose.model('Cart', cartSchema);
