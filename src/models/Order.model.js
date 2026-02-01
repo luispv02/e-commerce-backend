@@ -39,10 +39,14 @@ const orderSchema = new mongoose.Schema(
   }, { timestamps: true }
 )
 
-orderSchema.method('toJSON', function(){
-  const { __v, _id, ...object } = this.toObject();
-  object.id = _id;
-  return object
-})
+orderSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
 
 module.exports = mongoose.model('Order', orderSchema);
