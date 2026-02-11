@@ -87,43 +87,27 @@ const getAdminProductById = async(productId, userId) => {
 const updateProduct = async(productId, userId, body, files) => {
   const { deletedImages, ...updatedFields } = body;
 
-  let updateData = {
-    $set: { ...updatedFields },
-  };
+  const product = await Product.findOne({_id: productId,  createdBy: userId });
+  if(!product) throw new CustomError('Producto no encontrado', 404);
 
-  // Add new images
-  if (files.length > 0) {
-    const urlFiles = await uploadFiles(files);
+  Object.assign(product, updatedFields);
 
-    updateData.$push = {
-      images: { $each: urlFiles },
-    };
-  }
+  if(deletedImages) {
+    const parsed = JSON.parse(deletedImages);
 
-  // delete saved images
-  if (deletedImages) {
-    const imagesToDelete = JSON.parse(deletedImages);
-
-    if (Array.isArray(imagesToDelete) && imagesToDelete.length > 0) {
-      updateData.$pull = {
-        images: {
-          public_id: { $in: imagesToDelete },
-        },
-      };
-
-      await cloudinary.api.delete_resources(imagesToDelete);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      await cloudinary.api.delete_resources(parsed);
+      product.images = product.images.filter(img => !parsed.includes(img.public_id));
     }
   }
 
-  const updatedProduct = await Product.findOneAndUpdate(
-    { _id: productId, createdBy: userId },
-    updateData,
-    { new: true, runValidators: true }
-  );
-
-  if (!updatedProduct) throw new CustomError("Producto no encontrado", 404);
-
-  return updatedProduct;
+  if (files && files.length > 0) {
+    const urlFiles = await uploadFiles(files);
+    product.images.push(...urlFiles);
+  }
+ 
+  await product.save();
+  return product;
 };
 
 const deleteProduct = async(productId, userId) => {
