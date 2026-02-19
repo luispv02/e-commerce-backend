@@ -16,6 +16,13 @@ const getOrCreateCart = async(userId) => {
 const getCartWithProducts = async(userId) => {
   const cart = await getOrCreateCart(userId);
   await cart.populate('items.product');
+  const validItems = cart.items.filter((item) => item.product !== null);
+
+  if(validItems.length !== cart.items.length){
+    cart.items = validItems;
+    await cart.save()
+  }
+  
   return cart;
 };
 

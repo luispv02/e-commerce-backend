@@ -2,10 +2,24 @@ const mongoose = require('mongoose')
 
 const orderItemSchema = new mongoose.Schema(
   {
-    product: {
+    productId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
       required: true
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    images: {
+      type: [{
+        url: String,
+        public_id: String,
+      }],
+      default: [],
     },
     quantity: {
       type: Number,

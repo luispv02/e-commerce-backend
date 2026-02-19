@@ -31,7 +31,10 @@ const checkout = async (userId) => {
       total += item.quantity * product.price;
 
       orderItems.push({
-        product: product._id,
+        productId: product._id,
+        title: product.title,
+        description: product.description,
+        images: product.images,
         quantity: item.quantity,
         pricePaid: product.price,
       });
@@ -63,7 +66,6 @@ const checkout = async (userId) => {
     await session.commitTransaction();
     session.endSession();
 
-    await order.populate('items.product');
     return order
 
   } catch (error) {
