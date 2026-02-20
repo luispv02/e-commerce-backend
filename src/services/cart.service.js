@@ -5,11 +5,11 @@ const CustomError = require("../utils/custom-error.util");
 
 
 const getOrCreateCart = async(userId) => {
-  let cart = await Cart.findOne({ user: userId })
-  if (!cart) {
-    cart = new Cart({ user: userId, items: [] });
-    await cart.save();
-  }
+  const cart = await Cart.findOneAndUpdate(
+    { user: userId },
+    { $setOnInsert: { user: userId, items: [] }},
+    { new: true, upsert: true },
+  )
   return cart;
 };
 
