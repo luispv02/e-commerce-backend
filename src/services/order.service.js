@@ -30,14 +30,21 @@ const checkout = async (userId) => {
 
       total += item.quantity * product.price;
 
-      orderItems.push({
+      const orderItem = {
         productId: product._id,
         title: product.title,
         description: product.description,
         images: product.images,
         quantity: item.quantity,
         pricePaid: product.price,
-      });
+      }
+
+      const hasVariants = item.variants && (item.variants.color || item.variants.size);
+      if (hasVariants) {
+        orderItem.variants = item.variants;
+      }
+
+      orderItems.push(orderItem)
     }
 
     for (const item of cart.items) {

@@ -13,8 +13,8 @@ const cartItemSchema = new mongoose.Schema(
       min: 1
     },
     variants: {
-      color: String,
-      size: String,
+      type: Object,
+      default: undefined
     }
   }, { _id: true }
 );
