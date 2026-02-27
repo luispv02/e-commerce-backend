@@ -11,8 +11,12 @@ const cartItemSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1
+    },
+    variants: {
+      color: String,
+      size: String,
     }
-  }, { _id: false }
+  }, { _id: true }
 );
 
 const cartSchema = new mongoose.Schema(
@@ -31,6 +35,16 @@ const cartSchema = new mongoose.Schema(
 )
 
 cartSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+
+cartItemSchema.set('toJSON', {
   virtuals: true,
   transform: function (doc, ret) {
     ret.id = ret._id;
