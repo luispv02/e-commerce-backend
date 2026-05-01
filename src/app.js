@@ -10,6 +10,7 @@ const publicProducts = require('./routes/products.public.routes')
 const adminProducts = require('./routes/products.admin.routes')
 const cart = require('./routes/cart.routes')
 const orders = require('./routes/order.routes');
+const dashboard = require('./routes/dashboard.route');
 const errorHandler = require('./middlewares/error-handler.middleware');
 const CustomError = require('./utils/custom-error.util');
 
@@ -43,7 +44,7 @@ app.use('/api/products', publicProducts)
 app.use('/api/admin/products', adminProducts)
 app.use('/api/cart', cart)
 app.use('/api/orders', orders)
-
+app.use('/api/admin/dashboard', dashboard)
 
 
 app.use('/{*splat}', (req, res, next) => {

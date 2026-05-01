@@ -96,3 +96,27 @@ Crear y consultar pedidos. Requiere JWT.
 ```
 GET    /api/orders                  - Obtener productos comprados
 ```
+
+### Dashboard admin
+Métricas generales para el panel administrativo. Requiere JWT y rol admin.
+Permite consultar ingresos, pedidos, unidades vendidas, valor promedio por pedido, crecimiento frente al periodo anterior, usuarios nuevos, ventas por fecha, pedidos recientes y productos más vendidos.
+
+```
+GET    /api/admin/dashboard         - Obtener métricas del dashboard
+```
+
+#### Query params
+El parámetro `period` es opcional. Si no se envía, se usa `30d`.
+
+```
+GET /api/admin/dashboard?period=30d
+```
+
+Periodos aceptados:
+```
+7d      - Últimos 7 días
+30d     - Últimos 30 días
+3m      - Últimos 3 meses
+6m      - Últimos 6 meses
+1y      - Último año
+```
