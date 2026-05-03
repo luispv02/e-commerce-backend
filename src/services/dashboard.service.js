@@ -112,16 +112,18 @@ const getDashboardData = async (period = "30d") => {
             revenue: {
               $sum: { $multiply: ["$items.quantity", "$items.pricePaid"] },
             },
+            image: { $first: { $arrayElemAt: ["$items.images", 0] } },
           },
         },
         { $sort: { units: -1, revenue: -1 } },
         { $limit: 5 },
         {
           $project: {
-            _id: 0,
+            _id: 1,
             name: 1,
             units: 1,
             revenue: 1,
+            image: 1,
           },
         },
       ]),
@@ -142,7 +144,7 @@ const getDashboardData = async (period = "30d") => {
   const totalRevenue = currentSummary.totalRevenue || 0;
   const totalOrders = currentSummary.totalOrders || 0;
   const unitsSold = currentSummary.unitsSold || 0;
-  const averageOrderValue = totalOrders > 0 ? Number((totalRevenue / totalOrders).toFixed(2)) : 0;
+  const averageOrderValue = totalOrders > 0 ? Math.round((totalRevenue / totalOrders)) : 0;
   const previousRevenue = previousSummary[0]?.totalRevenue || 0;
   const growth = previousRevenue ? Number((((totalRevenue - previousRevenue) / previousRevenue) * 100).toFixed(1)): 0;
 
@@ -164,9 +166,11 @@ const getDashboardData = async (period = "30d") => {
       total: order.total,
     })),
     topProducts: topProducts.map((product) => ({
+      id: product._id,
       name: product.name,
       units: product.units,
       revenue: product.revenue,
+      image: product.image.url ?? null,
       percentage: totalRevenue
         ? Number(((product.revenue / totalRevenue) * 100).toFixed(1))
         : 0,
