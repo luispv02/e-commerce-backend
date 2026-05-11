@@ -1,18 +1,17 @@
 const generateJWT = require("../helpers/generate-jwt.helper");
-const User = require("../models/User.model");
+const { authRepository } = require("../repositories");
 const bcrypt = require('bcrypt');
 const CustomError = require("../utils/custom-error.util");
 
 const registerUser = async({ name, email, password }) => {
 
-  const user = await User.findOne({ email });
+  const user = await authRepository.findUserByEmail(email)
   if (user) throw new CustomError("Usuario ya registrado", 400);
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
-  const newUser = new User({ name, email, password: hashedPassword });
-  await newUser.save();
+  const newUser = await authRepository.createUser({ name, email, password: hashedPassword });
 
   const token = await generateJWT({
     uid: newUser.id,
@@ -33,7 +32,7 @@ const registerUser = async({ name, email, password }) => {
 
 const loginUser = async({ email, password }) => {
 
-  const user = await User.findOne({ email });
+  const user = await authRepository.findUserByEmail(email)
   if (!user) throw new CustomError("Credenciales inválidas", 400);
 
   const validPassword = await bcrypt.compare(password, user.password);

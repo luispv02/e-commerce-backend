@@ -1,27 +1,21 @@
 
-const Cart = require("../models/Cart.model");
-const Product = require("../models/Product.model");
+const { cartRepository, productPublicRepository } = require("../repositories");
 const CustomError = require("../utils/custom-error.util");
 const formatResponseCartWithStock = require("../helpers/format-cart-response.helper");
 
 
 const getOrCreateCart = async(userId) => {
-  const cart = await Cart.findOneAndUpdate(
-    { user: userId },
-    { $setOnInsert: { user: userId, items: [] }},
-    { new: true, upsert: true },
-  )
-  return cart;
+  return await cartRepository.getCreateCart(userId);
 };
 
 const getCartWithProducts = async(userId) => {
   const cart = await getOrCreateCart(userId);
-  await cart.populate('items.product');
+  await cartRepository.populateCartProducts(cart);
   const validItems = cart.items.filter((item) => item.product !== null);
 
   if(validItems.length !== cart.items.length){
     cart.items = validItems;
-    await cart.save()
+    await cartRepository.saveCart(cart)
   }
   const cartWithStock = formatResponseCartWithStock(cart);
   return cartWithStock;
@@ -31,7 +25,7 @@ const addItem = async(userId, productId, quantity, variants) => {
   
   if (quantity < 1) throw new CustomError('Cantidad inválida', 400);
 
-  const product = await Product.findOne({_id: productId, isActive: true});
+  const product = await productPublicRepository.findActiveProductById(productId);
   if (!product) throw new CustomError('Producto no encontrado', 404);
 
   const cart = await getOrCreateCart(userId);
@@ -66,8 +60,8 @@ const addItem = async(userId, productId, quantity, variants) => {
     cart.items.push(newProduct);
   }
 
-  await cart.save();
-  await cart.populate('items.product');
+  await cartRepository.saveCart(cart);
+  await cartRepository.populateCartProducts(cart);
 
   const cartWithStock = formatResponseCartWithStock(cart);
   return cartWithStock;
@@ -84,7 +78,7 @@ const updateItem = async(userId, cartItemId, quantity) => {
 
   const productId = itemInCart.product.toString();
 
-  const product = await Product.findOne({_id: productId, isActive: true});
+  const product = await productPublicRepository.findActiveProductById(productId);
   if (!product) throw new CustomError('Producto no encontrado o no disponible', 404);
 
   const totalQuantitySameProduct = cart.items
@@ -102,8 +96,8 @@ const updateItem = async(userId, cartItemId, quantity) => {
 
   itemInCart.quantity = quantity;
 
-  await cart.save();
-  await cart.populate('items.product');
+  await cartRepository.saveCart(cart);
+  await cartRepository.populateCartProducts(cart);
 
   const cartWithStock = formatResponseCartWithStock(cart);
   return cartWithStock;
@@ -118,8 +112,8 @@ const removeItem = async(userId, cartItemId) => {
     
   cart.items = cart.items.filter((item) => item._id.toString() !== cartItemId);
 
-  await cart.save();
-  await cart.populate('items.product');
+  await cartRepository.saveCart(cart);
+  await cartRepository.populateCartProducts(cart);
 
   const cartWithStock = formatResponseCartWithStock(cart);
   return cartWithStock;

@@ -1,16 +1,13 @@
-const Cart = require("../models/Cart.model");
-const Order = require("../models/Order.model");
-const Product = require("../models/Product.model");
+const { orderRepository } = require("../repositories");
 const CustomError = require("../utils/custom-error.util");
-const mongoose = require("mongoose")
 
 const checkout = async (userId) => {
-  const session = await mongoose.startSession();
+  const session = await orderRepository.startSession();
   
   try {
-    session.startTransaction();
+    orderRepository.startTransaction(session);
 
-    const cart = await Cart.findOne({ user: userId }).populate("items.product").session(session);
+    const cart = await orderRepository.findCartWithProducts(userId, session);
     if(!cart || cart.items.length === 0) {
       throw new CustomError('El carrito está vacío', 400);
     }
@@ -48,36 +45,35 @@ const checkout = async (userId) => {
     }
 
     for (const item of cart.items) {
-      const result = await Product.updateOne(
-        { _id: item.product._id, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity } },
-        { session }
-      );
+      const stockUpdated = await orderRepository.decreaseProductStock({
+        productId: item.product._id,
+        quantity: item.quantity,
+        session,
+      });
 
-      if (result.modifiedCount === 0) {
+      if (!stockUpdated) {
         throw new CustomError('Stock insuficiente durante el checkout', 400);
       }
     }
 
-    const order = new Order({
-      user: userId,
+    const order = await orderRepository.createOrder({
+      userId,
       items: orderItems,
       total,
+      session,
     });
 
-    await order.save({ session });
-
     cart.items = [];
-    await cart.save({ session });
+    await orderRepository.saveCart(cart, session);
 
-    await session.commitTransaction();
-    session.endSession();
+    await orderRepository.commitTransaction(session);
+    orderRepository.endSession(session);
 
     return order
 
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    await orderRepository.abortTransaction(session);
+    orderRepository.endSession(session);
     throw error;
   }
 };

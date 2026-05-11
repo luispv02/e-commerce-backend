@@ -93,8 +93,35 @@ const buildSalesTimeline = (salesParam, startDate, endDate, groupBy) => {
   return sales;
 };
 
+const getGroupId = (groupBy) => {
+  if(groupBy === "day") {
+    return {
+      $dateToString: {
+        date: "$createdAt",
+        format: "%Y-%m-%d",
+        timezone: "UTC",
+      },
+    };
+  }
+  
+  if(groupBy === "week") {
+    return {
+      year: { $year: "$createdAt" },
+      week: { $isoWeek: "$createdAt" },
+    };
+  }
+  
+  if(groupBy === "month") {
+    return {
+      year: { $year: "$createdAt" },
+      month: { $month: "$createdAt" },
+    };
+  }
+}
+
 module.exports = {
   getDateRange,
   getGrouping,
   buildSalesTimeline,
+  getGroupId
 };

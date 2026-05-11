@@ -1,144 +1,21 @@
 
-const { getDateRange, getGrouping, buildSalesTimeline } = require("../helpers/dashboard.helper");
-const Order = require("../models/Order.model");
-const User = require("../models/User.model");
-const CustomError = require("../utils/custom-error.util");
+const { getDateRange, getGrouping, buildSalesTimeline, getGroupId } = require("../helpers/dashboard.helper");
+const { dashboardRepository } = require("../repositories");
 
 const getDashboardData = async (period = "30d") => {
   const { endDate, previousStartDate, startDate } = getDateRange(period);
 
   const groupBy = getGrouping(period);
-  let groupId;
+  let groupId = getGroupId(groupBy);
 
-  if (groupBy === "day") {
-    groupId = {
-      $dateToString: {
-        date: "$createdAt",
-        format: "%Y-%m-%d",
-        timezone: "UTC",
-      },
-    };
-  } else if (groupBy === "week") {
-    groupId = {
-      year: { $year: "$createdAt" },
-      week: { $isoWeek: "$createdAt" },
-    };
-  } else if (groupBy === "month") {
-    groupId = {
-      year: { $year: "$createdAt" },
-      month: { $month: "$createdAt" },
-    };
-  }
-
-  const [summary, previousSummary, sales, topProducts, recentOrders, newUsers] =
-    await Promise.all([
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: {
-              $gte: startDate,
-              $lte: endDate,
-            },
-          },
-        },
-        { $unwind: "$items" },
-        {
-          $group: {
-            _id: "$_id",
-            total: { $first: "$total" },
-            units: { $sum: { $ifNull: ["$items.quantity", 0] } },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$total" },
-            totalOrders: { $sum: 1 },
-            unitsSold: { $sum: "$units" },
-          },
-        },
-      ]),
-
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: {
-              $gte: previousStartDate,
-              $lt: startDate,
-            },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: "$total" },
-          },
-        },
-      ]),
-
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: {
-              $gte: startDate,
-              $lte: endDate,
-            },
-          },
-        },
-        {
-          $group: {
-            _id: groupId,
-            revenue: { $sum: "$total" },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ]),
-
-      Order.aggregate([
-        {
-          $match: {
-            createdAt: {
-              $gte: startDate,
-              $lte: endDate,
-            },
-          },
-        },
-        { $unwind: "$items" },
-        {
-          $group: {
-            _id: "$items.productId",
-            name: { $first: "$items.title" },
-            units: { $sum: "$items.quantity" },
-            revenue: {
-              $sum: { $multiply: ["$items.quantity", "$items.pricePaid"] },
-            },
-            image: { $first: { $arrayElemAt: ["$items.images", 0] } },
-          },
-        },
-        { $sort: { units: -1, revenue: -1 } },
-        { $limit: 5 },
-        {
-          $project: {
-            _id: 1,
-            name: 1,
-            units: 1,
-            revenue: 1,
-            image: 1,
-          },
-        },
-      ]),
-
-      Order.find({ createdAt: { $gte: startDate, $lte: endDate } })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .populate("user", "name email")
-        .lean(),
-
-      User.countDocuments({
-        createdAt: { $gte: startDate, $lte: endDate },
-        role: { $ne: "admin" },
-      }),
-    ]);
+  const [summary, previousSummary, sales, topProducts, recentOrders, newUsers] = await Promise.all([
+    dashboardRepository.getOrdersSummary(startDate, endDate),
+    dashboardRepository.getPreviousOrdersSummary(previousStartDate, startDate),
+    dashboardRepository.getSalesTimeline({ startDate, endDate, groupId }),
+    dashboardRepository.getTopProducts(startDate, endDate),
+    dashboardRepository.getRecentOrders(startDate, endDate),
+    dashboardRepository.countNewUsers(startDate, endDate),
+  ]);
 
   const currentSummary = summary[0] || {};
   const totalRevenue = currentSummary.totalRevenue || 0;
