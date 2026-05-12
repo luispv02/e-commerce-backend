@@ -1,3 +1,8 @@
 const dbProvider = process.env.DB_PROVIDER || 'mongo';
 
-module.exports = require(`./${dbProvider}`);
+const providers = {
+  mongo: require('./mongo'),
+  postgres: require('./postgres'),
+};
+
+module.exports = providers[dbProvider];
