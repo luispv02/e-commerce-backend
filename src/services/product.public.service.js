@@ -17,8 +17,7 @@ const getPublicProducts = async(query) => {
       filters,
       sort,
       skip,
-      limit: limitNum,
-      includeTextScore: Boolean(q),
+      limit: limitNum
     }),
     productPublicRepository.countPublicProducts(filters),
   ]);

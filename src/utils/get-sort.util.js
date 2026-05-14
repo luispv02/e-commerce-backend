@@ -2,15 +2,15 @@
 const getSort = (order) => {
   switch (order) {
     case "price-asc":
-      return { price: 1 };
+      return { price: 'asc' };
     case "price-desc":
-      return { price: -1 }
+      return { price: 'desc' }
     case "newest":
-      return { createdAt: -1 } ;
+      return { createdAt: 'desc' } ;
     case "oldest":
-      return { createdAt: 1 };
+      return { createdAt: 'asc' };
     default:
-      return { createdAt: 1 } ;
+      return { createdAt: 'asc' } ;
   }
 };
 
