@@ -3,21 +3,25 @@ const formatResponseCartWithStock = (cart) => {
   const productCount = {};
 
   for(const item of cart.items) {
-    const id = item.product._id.toString();
-    productCount[id] = (productCount[id] || 0) + item.quantity;
+    const productId = item.product.id;
+    productCount[productId] = (productCount[productId] || 0) + item.quantity;
   }
 
   const itemsWithStock = cart.items.map(item => {
-    const id = item.product._id.toString();
+    const productId = item.product.id;
 
     return {
-      ...item.toJSON(),
-      stockAvailable: item.product.stock - productCount[id]
+      ...item,
+      product: {
+        ...item.product,
+        price: Number(item.product.price),
+      },
+      stockAvailable: item.product.stock - productCount[productId]
     };
   });
 
   return {
-    ...cart.toJSON(),
+    ...cart,
     items: itemsWithStock
   };
 }
