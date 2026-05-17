@@ -1,13 +1,16 @@
+const prisma = require("../lib/prisma");
+const formatOrder = require("../helpers/format-order.helper");
 const { orderRepository } = require("../repositories");
 const CustomError = require("../utils/custom-error.util");
 
-const checkout = async (userId) => {
-  const session = await orderRepository.startSession();
-  
-  try {
-    orderRepository.startTransaction(session);
+const getUserOrders = async(userId) => {
+  const orders =  await orderRepository.getOrdersByUser(userId);
+  return orders.map(order => formatOrder(order))
+}
 
-    const cart = await orderRepository.findCartWithProducts(userId, session);
+const checkout = async (userId) => {
+  return prisma.$transaction(async (tx) => {
+    const cart = await orderRepository.findCartWithProducts(userId, tx);
     if(!cart || cart.items.length === 0) {
       throw new CustomError('El carrito está vacío', 400);
     }
@@ -18,20 +21,24 @@ const checkout = async (userId) => {
     for (const item of cart.items) {
       const product = item.product;
       if (!product || !product.isActive) {
-        throw new CustomError(`Producto no disponible`, 404);
+        throw new CustomError("Producto no disponible", 404);
       }
 
       if (item.quantity > product.stock) {
-        throw new CustomError(`Stock insuficiente`, 400);
+        throw new CustomError("Stock insuficiente", 400);
       }
 
-      total += item.quantity * product.price;
+      total += Number(product.price) * item.quantity;
 
       const orderItem = {
-        productId: product._id,
+        productId: product.id,
         title: product.title,
         description: product.description,
-        images: product.images,
+        images: product.images.map((img) => ({
+          id: img.id,
+          url: img.url,
+          publicId: img.publicId,
+        })),
         quantity: item.quantity,
         pricePaid: product.price,
       }
@@ -45,14 +52,14 @@ const checkout = async (userId) => {
     }
 
     for (const item of cart.items) {
-      const stockUpdated = await orderRepository.decreaseProductStock({
-        productId: item.product._id,
+      const stockUpdated = await orderRepository.decreaseProductStock({ 
+        productId: item.product.id,
         quantity: item.quantity,
-        session,
+        tx
       });
 
       if (!stockUpdated) {
-        throw new CustomError('Stock insuficiente durante el checkout', 400);
+        throw new CustomError('Stock insuficiente durante checkout', 400);
       }
     }
 
@@ -60,24 +67,19 @@ const checkout = async (userId) => {
       userId,
       items: orderItems,
       total,
-      session,
+      tx,
     });
 
-    cart.items = [];
-    await orderRepository.saveCart(cart, session);
+    const formattedOrder = formatOrder(order)
 
-    await orderRepository.commitTransaction(session);
-    orderRepository.endSession(session);
+    await orderRepository.clearCart(cart.id, tx);
 
-    return order
+    return formattedOrder;
+  });
 
-  } catch (error) {
-    await orderRepository.abortTransaction(session);
-    orderRepository.endSession(session);
-    throw error;
-  }
 };
 
 module.exports = {
-    checkout
+  getUserOrders,
+  checkout
 };
