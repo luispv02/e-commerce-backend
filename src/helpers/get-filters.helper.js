@@ -1,10 +1,10 @@
 
-const getFilters = ({category, price, sizes, gender, colors, type, brand, q, createdBy, isAdmin = false}) => {
+const getFilters = ({category, price, sizes, gender, colors, type, brand, q, createdById, isAdmin = false}) => {
 
   const filters = {};
 
   if(isAdmin){
-    if(createdBy) filters.createdBy = createdBy;
+    if(createdById) filters.createdById = createdById;
   }else{
     filters.isActive = true
   }
