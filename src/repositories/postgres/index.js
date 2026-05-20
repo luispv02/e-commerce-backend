@@ -5,4 +5,5 @@ module.exports = {
   cartRepository: require('./cart.repository'),
   orderRepository: require('./order.repository'),
   productAdminRepository: require('./product.admin.repository'),
+  dashboardRepository: require('./dashboard.repository'),
 }

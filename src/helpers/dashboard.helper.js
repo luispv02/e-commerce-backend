@@ -55,7 +55,7 @@ const getGrouping = (period) => {
 // Create the revenue series, filling in the missing dates according to the grouping type, and set periods without sales to 0
 const buildSalesTimeline = (salesParam, startDate, endDate, groupBy) => {
   const revenueMap = new Map(
-    salesParam.map((row) => [JSON.stringify(row._id), Math.round(row.revenue)]),
+    salesParam.map((row) => [JSON.stringify(row.id), Math.round(row.revenue)]),
   );
 
   const sales = [];
