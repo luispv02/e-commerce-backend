@@ -1,4 +1,6 @@
 const prisma = require("../../lib/prisma");
+const productInclude = require("../../prisma/includes/product.include");
+
 
 const findPublicProducts = async({ filters, sort, skip, limit }) => {
 
@@ -7,9 +9,7 @@ const findPublicProducts = async({ filters, sort, skip, limit }) => {
     orderBy: sort,
     skip,
     take: limit,
-    include: {
-      images: true
-    }
+    include: productInclude
   });
 };
 
@@ -25,9 +25,7 @@ const findActiveProductById = (productId) => {
       id: productId,
       isActive: true,
     },
-    include: {
-      images: true
-    },
+    include: productInclude
   });
 };
 

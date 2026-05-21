@@ -1,4 +1,5 @@
 const prisma = require("../../lib/prisma");
+const productInclude = require("../../prisma/includes/product.include");
 
 const getOrdersByUser = (userId) => {
   return prisma.order.findMany({
@@ -21,9 +22,7 @@ const findCartWithProducts = (userId, tx) => {
       items: {
         include: {
           product: {
-            include: {
-              images: true,
-            },
+            include: productInclude,
           },
         },
       },

@@ -3,6 +3,7 @@ const getFilters = require("../helpers/get-filters.helper");
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
 const { productPublicRepository } = require("../repositories");
+const formatProduct = require("../helpers/format-product.helper");
 
 const getPublicProducts = async(query) => {
 
@@ -29,7 +30,7 @@ const getPublicProducts = async(query) => {
       totalProducts: totalProducts,
       totalPages: Math.ceil(totalProducts / limitNum),
     },
-    products,
+    products: products.map(formatProduct),
   };
 };
 
@@ -39,7 +40,7 @@ const getPublicProductById = async (productId) => {
 
   if(!product) throw new CustomError("Producto no encontrado", 404);
 
-  return product;
+  return formatProduct(product);
 };
 
 

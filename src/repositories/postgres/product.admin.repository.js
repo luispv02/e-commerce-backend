@@ -1,14 +1,5 @@
 const prisma = require("../../lib/prisma");
-
-const productInclude = {
-  images: {
-    select: {
-      id: true,
-      url: true,
-      publicId: true,
-    },
-  },
-};
+const productInclude = require("../../prisma/includes/product.include");
 
 const createProduct = (data) => {
   return prisma.product.create({

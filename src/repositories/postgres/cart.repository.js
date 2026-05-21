@@ -1,4 +1,5 @@
 const prisma = require("../../lib/prisma");
+const productInclude = require("../../prisma/includes/product.include");
 
 const getOrCreateCart = (userId) => {
   return prisma.cart.upsert({
@@ -9,9 +10,7 @@ const getOrCreateCart = (userId) => {
       items: {
         include: {
           product: {
-            include: {
-              images: true,
-            },
+            include: productInclude
           },
         },
       },
@@ -32,9 +31,7 @@ const getCartByUserId = (userId) => {
           quantity: true,
           variants: true,
           product: {
-            include: {
-              images: true
-            }
+            include: productInclude
           },
         },
       },

@@ -34,11 +34,7 @@ const checkout = async (userId) => {
         productId: product.id,
         title: product.title,
         description: product.description,
-        images: product.images.map((img) => ({
-          id: img.id,
-          url: img.url,
-          publicId: img.publicId,
-        })),
+        images: product.images,
         quantity: item.quantity,
         pricePaid: product.price,
       }
