@@ -1,3 +1,5 @@
+const formatProduct = require("./format-product.helper");
+
 const formatResponseCartWithStock = (cart) => {
   
   const productCount = {};
@@ -11,11 +13,10 @@ const formatResponseCartWithStock = (cart) => {
     const productId = item.product.id;
 
     return {
-      ...item,
-      product: {
-        ...item.product,
-        price: Number(item.product.price),
-      },
+      id: item.id,
+      quantity: item.quantity,
+      ...(item.variants && { variants: item.variants, }),
+      product: formatProduct(item.product),
       stockAvailable: item.product.stock - productCount[productId]
     };
   });
