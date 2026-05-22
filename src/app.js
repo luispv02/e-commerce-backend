@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit');
-const { dbConnection } = require('./config/db.config');
 require('dotenv').config()
 
 const auth = require('./routes/auth.routes');
@@ -22,7 +21,6 @@ app.use(helmet())
 app.use(express.json());
 
 
-dbConnection();
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 

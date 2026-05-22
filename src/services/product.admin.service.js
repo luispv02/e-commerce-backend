@@ -1,10 +1,11 @@
 const getFilters = require("../helpers/get-filters.helper");
 const { uploadFiles } = require("../helpers/upload-files.helper");
-const { productAdminRepository } = require("../repositories");
+const { productAdminRepository } = require("../repositories/postgres");
 const CustomError = require("../utils/custom-error.util");
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
 const cloudinary = require('../config/cloudinary.config');
+const formatProduct = require("../helpers/format-product.helper");
 
 const createProduct = async(data, files = [], userId) => {
 
@@ -17,12 +18,17 @@ const createProduct = async(data, files = [], userId) => {
 
   const productData = {
     title,
-    price,
+    price: Number(price),
     description,
-    stock,
+    stock: Number(stock),
     category,
-    images: imgUrls,
-    createdBy: userId,
+    images: {
+      create: imgUrls.map((img) => ({
+        url: img.url,
+        publicId: img.publicId
+      }))
+    },
+    createdById: userId,
   };
 
   if (category === "clothes") {
@@ -39,14 +45,14 @@ const createProduct = async(data, files = [], userId) => {
 
   const newProduct = await productAdminRepository.createProduct(productData);
 
-  return newProduct;
+  return formatProduct(newProduct);
 };
 
 const getAdminProducts = async(query, userId) => {
 
   const { order, page = 1, limit = 10 } = query;
 
-  const filters = getFilters({ ...query, createdBy: userId, isAdmin: true });
+  const filters = getFilters({ ...query, createdById: userId, isAdmin: true });
   const sort = getSort(order);
   const { pageNum, limitNum, skip } = getPagination(page, limit);
 
@@ -68,7 +74,7 @@ const getAdminProducts = async(query, userId) => {
       totalProducts: totalProducts,
       totalPages: Math.ceil(totalProducts / limitNum),
     },
-    products,
+    products: products.map(formatProduct)
   };
 };
 
@@ -78,7 +84,7 @@ const getAdminProductById = async(productId, userId) => {
 
   if (!product) throw new CustomError('Producto no encontrado', 404);
 
-  return product;
+  return formatProduct(product);
 };
 
 const updateProduct = async(productId, userId, body, files) => {
@@ -87,38 +93,51 @@ const updateProduct = async(productId, userId, body, files) => {
   const product = await productAdminRepository.findAdminProductById(productId, userId);
   if(!product) throw new CustomError('Producto no encontrado', 404);
 
-  Object.assign(product, updatedFields);
+  const dataToUpdate = { 
+    ...updatedFields,
+  };
+
+  if(updatedFields.price !== undefined) dataToUpdate.price = Number(updatedFields.price)
+  if(updatedFields.stock !== undefined) dataToUpdate.stock = Number(updatedFields.stock)
+  if(updatedFields.isActive !== undefined) dataToUpdate.isActive = updatedFields.isActive === 'true' 
 
   if(deletedImages) {
     const parsed = JSON.parse(deletedImages);
 
     if (Array.isArray(parsed) && parsed.length > 0) {
       await cloudinary.api.delete_resources(parsed);
-      product.images = product.images.filter(img => !parsed.includes(img.public_id));
+      await productAdminRepository.deleteProductImages(parsed)
     }
   }
 
   if (files && files.length > 0) {
     const urlFiles = await uploadFiles(files);
-    product.images.push(...urlFiles);
+    
+    dataToUpdate.images = { 
+      create: urlFiles.map((img) => ({ 
+        url: img.url, 
+        publicId: img.publicId, 
+      })), 
+    };
   }
- 
-  await productAdminRepository.saveProduct(product);
-  return product;
+
+  const updatedProduct = await productAdminRepository.updateProduct(productId, dataToUpdate);
+
+  return formatProduct(updatedProduct)
 };
 
 const deleteProduct = async(productId, userId) => {
 
-    const productDeleted = await productAdminRepository.deleteAdminProductById(productId, userId);
+  const productDeleted = await productAdminRepository.deleteAdminProductById(productId, userId);
 
-    if (!productDeleted) throw new CustomError('Producto no encontrado', 404)
+  if (!productDeleted) throw new CustomError('Producto no encontrado', 404)
 
-    if (productDeleted.images && productDeleted.images.length > 0) {
-        const publicIds = productDeleted.images.map(img => img.public_id);
-        await cloudinary.api.delete_resources(publicIds);
-    }
+  if (productDeleted.images && productDeleted.images.length > 0) {
+      const publicIds = productDeleted.images.map(img => img.publicId);
+      await cloudinary.api.delete_resources(publicIds);
+  }
 
-    return productDeleted
+  return formatProduct(productDeleted)
 }
 
 module.exports = {

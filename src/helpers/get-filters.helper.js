@@ -1,47 +1,52 @@
 
-const getFilters = ({category, price, sizes, gender, colors, type, brand, q, createdBy, isAdmin = false}) => {
+const getFilters = ({category, price, sizes, gender, colors, type, brand, q, createdById, isAdmin = false}) => {
 
   const filters = {};
 
   if(isAdmin){
-    if(createdBy) filters.createdBy = createdBy;
+    if(createdById) filters.createdById = createdById;
   }else{
     filters.isActive = true
   }
 
   if (q && q.trim() !== "") {
-    filters.$text = { $search: q };
+    const cleanQ = q.trim().replace(/[^\w\s]/g, "").replace(/\s+/g, " ");
+    const searchQuery = cleanQ.split(" ").map((term) => `${term}:*`).join(" & ");
+
+    filters.OR = [
+      { title: { search: searchQuery } },
+      { description: { search: searchQuery } },
+    ];  
+
   }
 
   if (category && category !== "all") filters.category = category;
   if (price) {
     const [min, max] = price.split("-").map(Number);
     filters.price = {};
-    if (min) filters.price.$gte = min;
-    if (max) filters.price.$lte = max;
+    if (min) filters.price.gte = min;
+    if (max) filters.price.lte = max;
+  }
+
+  if (type) {
+    filters.type = { in: type.split(",") };
   }
 
   // Clothes
   if (category === "clothes") {
     if (sizes) {
-      filters.sizes = { $in: sizes.split(",") };
+      filters.sizes = { hasSome: sizes.split(",") }
     }
     if (gender) filters.gender = gender;
     if (colors) {
-      filters.colors = { $in: colors.split(",") };
-    }
-    if (type) {
-      filters.type = { $in: type.split(",") };
+      filters.colors = { hasSome: colors.split(",") };
     }
   }
 
   // Technology
   if (category === "technology") {
-    if (type) {
-      filters.type = { $in: type.split(",") };
-    }
     if (brand) {
-      filters.brand = { $in: brand.split(",") };
+      filters.brand = { in: brand.split(",") };
     }
   }
 

@@ -1,20 +1,23 @@
 # E-Commerce Backend
 
-BackEnd para la aplicación de e-commerce construida con Node.js y Express. Incluye autenticación, gestión de productos, carrito, pedidos y subida de imágenes con Cloudinary.
+BackEnd para la aplicación de e-commerce construida con Node.js y Express. Incluye autenticación, gestión de productos, carrito, pedidos, dashboard administrativo, subida de imágenes con Cloudinary y persistencia con PostgreSQL/Prisma.
 
 ## Características
 - Registro y login de usuarios
 - JWT para sesiones
 - CRUD completo de productos
-- Filtrado y búsqueda de productos
+- Filtrado, búsqueda, ordenamiento y paginación de productos
 - Validaciones
 - Control de inventario
 - Gestión de carrito de compra
+- Checkout con creación de pedidos y descuento de stock
+- Dashboard administrativo con métricas de ventas
 
 ## Tecnologías
 - **Node.js** 
 - **Express**
-- **MongoDB(Mongoose)** 
+- **PostgreSQL**
+- **Prisma**
 - **JWT**
 - **Multer**
 - **Bcrypt** 
@@ -41,14 +44,28 @@ BackEnd para la aplicación de e-commerce construida con Node.js y Express. Incl
   Crea un archivo `.env` en la raíz del proyecto:
     ```env
     PORT=3000
-    DATABASE_URL=mongodb+srv://usuario:password@cluster.mongodb.net/e_commerce
+    POSTGRES_DB=e_commerce
+    POSTGRES_USER=postgres
+    POSTGRES_PASSWORD=postgres
+    DATABASE_URL=postgresql://postgres:postgres@localhost:5432/e_commerce
     JWT_SECRET=clave_secreta_super_segura
     CLOUDINARY_CLOUD_NAME=tu_cloud_name
     CLOUDINARY_API_KEY=tu_api_key
     CLOUDINARY_API_KEY_SECRET=tu_api_secret
     ```
 
-4. **Ejecuta el servidor de desarrollo**
+4. **Levanta PostgreSQL con Docker**
+   ```bash
+   docker compose up -d
+   ```
+
+5. **Ejecuta las migraciones de Prisma**
+   ```bash
+   npx prisma migrate dev
+   npx prisma generate
+   ```
+
+6. **Ejecuta el servidor de desarrollo**
    ```bash
    npm run dev
    ```
@@ -65,7 +82,7 @@ POST    /api/auth/renew             - Renovar token
 ```
 
 ### Productos públicos
-Consultas sin autenticación (listado, búsqueda, detalle).
+Consultas sin autenticación (listado, búsqueda, detalle, filtros, ordenamiento y paginación).
 ```
 GET    /api/products                - Obtener todos los productos
 GET    /api/products/:id            - Obtener producto por id

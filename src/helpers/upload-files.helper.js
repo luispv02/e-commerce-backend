@@ -28,7 +28,7 @@ const uploadFiles = async (files) => {
     return urls.map(url => {
       return {
         url: url.secure_url,
-        public_id: url.public_id
+        publicId: url.public_id
       }
     })
   } catch (error) {

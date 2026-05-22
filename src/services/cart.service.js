@@ -1,24 +1,23 @@
 
-const { cartRepository, productPublicRepository } = require("../repositories");
+const { cartRepository, productPublicRepository } = require("../repositories/postgres");
 const CustomError = require("../utils/custom-error.util");
 const formatResponseCartWithStock = require("../helpers/format-cart-response.helper");
 
 
-const getOrCreateCart = async(userId) => {
-  return await cartRepository.getCreateCart(userId);
-};
-
-const getCartWithProducts = async(userId) => {
-  const cart = await getOrCreateCart(userId);
-  await cartRepository.populateCartProducts(cart);
-  const validItems = cart.items.filter((item) => item.product !== null);
-
-  if(validItems.length !== cart.items.length){
-    cart.items = validItems;
-    await cartRepository.saveCart(cart)
+const getCart = async (userId) => {
+  let cart = await cartRepository.getCartByUserId(userId);
+  if(!cart){
+    return { 
+      items: []
+    };
   }
-  const cartWithStock = formatResponseCartWithStock(cart);
-  return cartWithStock;
+
+  const invalidItems = cart.items.filter((item) => item.product === null);
+  if(invalidItems.length > 0){
+    await cartRepository.deleteCartItems(invalidItems);
+    cart = await cartRepository.getCartByUserId(userId);
+  }
+  return formatResponseCartWithStock(cart);
 };
 
 const addItem = async(userId, productId, quantity, variants) => {
@@ -28,100 +27,93 @@ const addItem = async(userId, productId, quantity, variants) => {
   const product = await productPublicRepository.findActiveProductById(productId);
   if (!product) throw new CustomError('Producto no encontrado', 404);
 
-  const cart = await getOrCreateCart(userId);
+  const cart = await cartRepository.getOrCreateCart(userId);
 
   const item = cart.items.find(item => {
-    const sameProduct = item.product.equals(productId)
+    const sameProduct = item.productId === productId;
 
     if(!variants) return sameProduct;
 
     return (sameProduct && item?.variants.color === variants.color && item?.variants.size === variants.size);
   });
 
-  const totalQuantitySameProduct = cart.items.filter((item) => item.product.equals(productId)).reduce((acc, i) => i.quantity + acc ,0);
+  const totalQuantitySameProduct = cart.items
+    .filter((item) => item.productId === productId)
+    .reduce((acc, i) => i.quantity + acc, 0);
+
   const newUpdatedTotal = totalQuantitySameProduct + quantity;
 
   if(newUpdatedTotal > product.stock) throw new CustomError('Stock insuficiente', 400);
 
-  if(item){
-    item.quantity += quantity;
-  }else{
-    const newProduct = {
-      product: productId,
-      quantity
-    };
-
-    if (variants) {
-      newProduct.variants = {
-        color: variants.color,
-        size: variants.size
-      };
-    }
-    cart.items.push(newProduct);
+  if (item) {
+    await cartRepository.updateCartItemQuantity(
+      item.id,
+      item.quantity + quantity,
+    );
+  } else {
+    await cartRepository.createCartItem({
+      cartId: cart.id,
+      productId,
+      quantity,
+      variants,
+    });
   }
 
-  await cartRepository.saveCart(cart);
-  await cartRepository.populateCartProducts(cart);
+  const updatedCart = await cartRepository.getCartByUserId(userId);
 
-  const cartWithStock = formatResponseCartWithStock(cart);
-  return cartWithStock;
+  return formatResponseCartWithStock(updatedCart);
 };
 
 const updateItem = async(userId, cartItemId, quantity) => {
 
   if (quantity < 1) throw new CustomError('Cantidad inválida', 400);
 
-  const cart = await getOrCreateCart(userId);
+  const cart = await cartRepository.getCartByUserId(userId);
+  if(!cart) { throw new CustomError("Carrito no encontrado", 404); }
 
-  const itemInCart = cart.items.find(item => item._id.toString() === cartItemId);
+  const itemInCart = cart.items.find((item) => item.id === cartItemId);
   if (!itemInCart) throw new CustomError('Producto no encontrado en el carrito', 404);
 
-  const productId = itemInCart.product.toString();
-
+  const productId = itemInCart.product.id;
   const product = await productPublicRepository.findActiveProductById(productId);
   if (!product) throw new CustomError('Producto no encontrado o no disponible', 404);
 
   const totalQuantitySameProduct = cart.items
-  .filter(item => item.product.toString() === productId)
-  .reduce((acc, i) => {
-    if (i._id.toString() === cartItemId) {
-      return acc + quantity;
-    }
-    return acc + i.quantity;
-  }, 0);
+    .filter((item) => item.product.id === productId)
+    .reduce((acc, i) => {
+      if (i.id === cartItemId) {
+        return acc + quantity;
+      }
+      return acc + i.quantity;
+    }, 0);
 
   if (totalQuantitySameProduct > product.stock) {
     throw new CustomError('Stock insuficiente', 400);
   }
 
-  itemInCart.quantity = quantity;
+  await cartRepository.updateCartItemQuantity(cartItemId,quantity)
 
-  await cartRepository.saveCart(cart);
-  await cartRepository.populateCartProducts(cart);
+  const updatedCart = await cartRepository.getCartByUserId(userId);
 
-  const cartWithStock = formatResponseCartWithStock(cart);
-  return cartWithStock;
+  return formatResponseCartWithStock(updatedCart);
 };
 
 const removeItem = async(userId, cartItemId) => {
 
-  const cart = await getOrCreateCart(userId);
-  
-  const item = cart.items.find((item) => item._id.toString() === cartItemId);
+  const cart = await cartRepository.getCartByUserId(userId);
+  if (!cart) { throw new CustomError('Carrito no encontrado', 404); }
+
+  const item = cart.items.find((item) => item.id === cartItemId);
   if (!item) throw new CustomError('Producto no encontrado en el carrito', 404);
-    
-  cart.items = cart.items.filter((item) => item._id.toString() !== cartItemId);
 
-  await cartRepository.saveCart(cart);
-  await cartRepository.populateCartProducts(cart);
+  await cartRepository.deleteCartItem(cartItemId)
+  const updatedCart = await cartRepository.getCartByUserId(userId);
 
-  const cartWithStock = formatResponseCartWithStock(cart);
-  return cartWithStock;
+  return formatResponseCartWithStock(updatedCart);
 };
 
 module.exports = {
-  getOrCreateCart,
-  getCartWithProducts,
+  getCart,
   addItem,
   updateItem,
   removeItem

@@ -2,7 +2,8 @@ const CustomError = require("../utils/custom-error.util");
 const getFilters = require("../helpers/get-filters.helper");
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
-const { productPublicRepository } = require("../repositories");
+const { productPublicRepository } = require("../repositories/postgres");
+const formatProduct = require("../helpers/format-product.helper");
 
 const getPublicProducts = async(query) => {
 
@@ -17,8 +18,7 @@ const getPublicProducts = async(query) => {
       filters,
       sort,
       skip,
-      limit: limitNum,
-      includeTextScore: Boolean(q),
+      limit: limitNum
     }),
     productPublicRepository.countPublicProducts(filters),
   ]);
@@ -30,7 +30,7 @@ const getPublicProducts = async(query) => {
       totalProducts: totalProducts,
       totalPages: Math.ceil(totalProducts / limitNum),
     },
-    products,
+    products: products.map(formatProduct),
   };
 };
 
@@ -40,7 +40,7 @@ const getPublicProductById = async (productId) => {
 
   if(!product) throw new CustomError("Producto no encontrado", 404);
 
-  return product;
+  return formatProduct(product);
 };
 
 
