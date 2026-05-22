@@ -2,7 +2,7 @@ const CustomError = require("../utils/custom-error.util");
 const getFilters = require("../helpers/get-filters.helper");
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
-const { productPublicRepository } = require("../repositories");
+const { productPublicRepository } = require("../repositories/postgres");
 const formatProduct = require("../helpers/format-product.helper");
 
 const getPublicProducts = async(query) => {

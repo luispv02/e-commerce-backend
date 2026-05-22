@@ -1,6 +1,6 @@
 const prisma = require("../lib/prisma");
 const formatOrder = require("../helpers/format-order.helper");
-const { orderRepository } = require("../repositories");
+const { orderRepository } = require("../repositories/postgres");
 const CustomError = require("../utils/custom-error.util");
 
 const getUserOrders = async(userId) => {

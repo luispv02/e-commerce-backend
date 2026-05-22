@@ -1,6 +1,6 @@
 
 const { getDateRange, getGrouping, buildSalesTimeline } = require("../helpers/dashboard.helper");
-const { dashboardRepository } = require("../repositories");
+const { dashboardRepository } = require("../repositories/postgres");
 
 const getDashboardData = async (period = "30d") => {
   const { endDate, previousStartDate, startDate } = getDateRange(period);

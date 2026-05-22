@@ -1,5 +1,5 @@
 
-const { cartRepository, productPublicRepository } = require("../repositories");
+const { cartRepository, productPublicRepository } = require("../repositories/postgres");
 const CustomError = require("../utils/custom-error.util");
 const formatResponseCartWithStock = require("../helpers/format-cart-response.helper");
 

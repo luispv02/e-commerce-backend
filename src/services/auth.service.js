@@ -1,7 +1,7 @@
 const generateJWT = require("../helpers/generate-jwt.helper");
-const { authRepository } = require("../repositories");
 const bcrypt = require('bcrypt');
 const CustomError = require("../utils/custom-error.util");
+const { authRepository } = require("../repositories/postgres");
 
 const registerUser = async({ name, email, password }) => {
 

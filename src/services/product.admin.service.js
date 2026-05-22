@@ -1,6 +1,6 @@
 const getFilters = require("../helpers/get-filters.helper");
 const { uploadFiles } = require("../helpers/upload-files.helper");
-const { productAdminRepository } = require("../repositories");
+const { productAdminRepository } = require("../repositories/postgres");
 const CustomError = require("../utils/custom-error.util");
 const getPagination = require("../utils/get-pagination.util");
 const getSort = require("../utils/get-sort.util");
